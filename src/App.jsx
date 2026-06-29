@@ -33,81 +33,101 @@ function App() {
   // 1. Extract and pre-render frames from the video on mount
   useEffect(() => {
     let active = true
+    let blobUrl = null
     const videoUrl = '/Liquid_ripple_inside_coffee_cup_202606292353-ezgif.com-gif-maker.webm'
-    const tempVideo = document.createElement('video')
-    tempVideo.src = videoUrl
-    tempVideo.muted = true
-    tempVideo.playsInline = true
-    tempVideo.preload = 'auto'
 
-    const handleLoadedMetadata = async () => {
-      const duration = tempVideo.duration
-      if (!duration || isNaN(duration)) return
-
-      // Extract frames at ~24fps for optimization and file duration
-      const fps = 24
-      const totalFrames = Math.max(30, Math.floor(duration * fps))
-      const extracted = []
-
-      // Create internal canvas for extraction cropping
-      const canvas = document.createElement('canvas')
-      canvas.width = 800 // Crisp resolution
-      canvas.height = 800
-      const ctx = canvas.getContext('2d')
-
-      for (let i = 0; i < totalFrames; i++) {
+    const fetchAndExtract = async () => {
+      try {
+        // Fetch the video file over the network as a blob first
+        const response = await fetch(videoUrl)
+        if (!response.ok) throw new Error('Video fetch failed')
+        const blob = await response.blob()
+        
         if (!active) return
-        const time = (i / (totalFrames - 1)) * duration
-        tempVideo.currentTime = time
+        
+        // Create a local blob URL to seek locally in memory without making network requests
+        blobUrl = URL.createObjectURL(blob)
+        
+        const tempVideo = document.createElement('video')
+        tempVideo.src = blobUrl
+        tempVideo.muted = true
+        tempVideo.playsInline = true
+        tempVideo.preload = 'auto'
 
-        await new Promise((resolve) => {
-          const onSeeked = () => {
-            tempVideo.removeEventListener('seeked', onSeeked)
-            resolve()
+        tempVideo.addEventListener('loadedmetadata', async () => {
+          const duration = tempVideo.duration
+          if (!duration || isNaN(duration)) return
+
+          // Extract frames at ~24fps for optimization and file duration
+          const fps = 24
+          const totalFrames = Math.max(30, Math.floor(duration * fps))
+          const extracted = []
+
+          // Create internal canvas for extraction cropping
+          const canvas = document.createElement('canvas')
+          canvas.width = 800 // Crisp resolution
+          canvas.height = 800
+          const ctx = canvas.getContext('2d')
+
+          for (let i = 0; i < totalFrames; i++) {
+            if (!active) return
+            const time = (i / (totalFrames - 1)) * duration
+            tempVideo.currentTime = time
+
+            await new Promise((resolve) => {
+              const onSeeked = () => {
+                tempVideo.removeEventListener('seeked', onSeeked)
+                resolve()
+              }
+              tempVideo.addEventListener('seeked', onSeeked)
+            })
+
+            // Crop out top and bottom letterbox black bars, and right watermark
+            const vWidth = tempVideo.videoWidth
+            const vHeight = tempVideo.videoHeight
+            
+            const cropTopPercent = 0.10    // Exclude top 10% (top black bar)
+            const cropBottomPercent = 0.10 // Exclude bottom 10% (bottom black bar)
+            const cropRightPercent = 0.05  // Exclude right 5% (watermarks)
+            
+            const usableWidth = vWidth * (1 - cropRightPercent)
+            const usableHeight = vHeight * (1 - cropTopPercent - cropBottomPercent)
+            
+            const size = Math.min(usableWidth, usableHeight)
+            const xOffset = (usableWidth - size) / 2
+            const yOffset = vHeight * cropTopPercent // Start below the top black bar
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height)
+            ctx.drawImage(tempVideo, xOffset, yOffset, size, size, 0, 0, canvas.width, canvas.height)
+
+            const img = new Image()
+            img.src = canvas.toDataURL('image/jpeg', 0.85)
+
+            await new Promise((resolve) => {
+              img.onload = resolve
+            })
+
+            extracted.push(img)
+            setLoadingProgress(Math.round(((i + 1) / totalFrames) * 100))
           }
-          tempVideo.addEventListener('seeked', onSeeked)
+
+          if (active) {
+            setFrames(extracted)
+            setIsLoaded(true)
+          }
         })
-
-        // Crop out top and bottom letterbox black bars, and right watermark
-        const vWidth = tempVideo.videoWidth
-        const vHeight = tempVideo.videoHeight
-        
-        const cropTopPercent = 0.10    // Exclude top 10% (top black bar)
-        const cropBottomPercent = 0.10 // Exclude bottom 10% (bottom black bar)
-        const cropRightPercent = 0.05  // Exclude right 5% (watermarks)
-        
-        const usableWidth = vWidth * (1 - cropRightPercent)
-        const usableHeight = vHeight * (1 - cropTopPercent - cropBottomPercent)
-        
-        const size = Math.min(usableWidth, usableHeight)
-        const xOffset = (usableWidth - size) / 2
-        const yOffset = vHeight * cropTopPercent // Start below the top black bar
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
-        ctx.drawImage(tempVideo, xOffset, yOffset, size, size, 0, 0, canvas.width, canvas.height)
-
-        const img = new Image()
-        img.src = canvas.toDataURL('image/jpeg', 0.85)
-
-        await new Promise((resolve) => {
-          img.onload = resolve
-        })
-
-        extracted.push(img)
-        setLoadingProgress(Math.round(((i + 1) / totalFrames) * 100))
-      }
-
-      if (active) {
-        setFrames(extracted)
-        setIsLoaded(true)
+      } catch (err) {
+        console.error('Failed to extract video frames locally:', err)
       }
     }
 
-    tempVideo.addEventListener('loadedmetadata', handleLoadedMetadata)
+    fetchAndExtract()
 
     return () => {
       active = false
-      tempVideo.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl)
+      }
     }
   }, [])
 
