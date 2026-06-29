@@ -210,38 +210,91 @@
 
 /* Adjustments for different screen sizes (Responsiveness fallback) */
 @media (max-width: 1024px) {
+  .app-container {
+    min-height: auto; /* Reset minimum height to remove empty scroll space on mobile */
+  }
+
   .navbar {
-    padding: 1rem 1.5rem;
+    padding: 1.25rem 1.5rem;
   }
+  
   .nav-links {
-    display: none; /* Hide for simplicity on mobile, focus on aesthetic */
+    display: none; /* Hide links on mobile for cleaner look */
   }
+  
   .sticky-wrapper {
+    position: relative;
     left: 0;
     width: 100%;
-    height: 50vh;
-    top: 50vh; /* Put video on bottom half on mobile */
+    height: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 3.5rem 0 2rem 0; /* Add generous space above/below the video */
+    z-index: 5;
+    pointer-events: auto;
   }
+  
   .video-bounding-box {
     width: 320px;
     height: 320px;
+    box-shadow: var(--shadow-warm);
+    border-radius: 50%;
   }
+  
   .video-element {
-    width: 360px;
-    height: 360px;
+    width: 365px;
+    height: 365px;
   }
+  
   .content-section {
     width: 100%;
-    height: 50vh;
-    padding: 2rem;
+    height: auto; /* Wrap content naturally */
+    min-height: auto;
+    padding: 4rem 1.5rem 3rem 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 5;
+  }
+  
+  /* Prevent the fixed navbar from covering Section 1 */
+  #origin.content-section {
+    padding-top: 130px;
+  }
+  
+  .section-content {
+    background-color: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+    max-width: 500px;
     align-items: center;
     text-align: center;
+    opacity: 1 !important; /* Force visible on mobile, overriding inline motion styles */
+    transform: none !important; /* Force reset positioning, overriding inline motion transforms */
   }
-  .section-content {
-    align-items: center;
+  
+  .section-title {
+    font-size: 2.6rem;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin-top: 0.5rem;
   }
+  
+  .section-desc {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+  
   .scroll-indicator {
-    display: none;
+    display: none; /* Hide scroll indicator inside section content on mobile */
   }
 }
 
@@ -294,5 +347,79 @@
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* Floating WhatsApp Button */
+.whatsapp-fab-container {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.whatsapp-fab {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #25D366;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 10px 30px rgba(37, 211, 102, 0.35);
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: background-color 0.3s ease;
+}
+
+.whatsapp-fab:hover {
+  background-color: #20BA5A;
+}
+
+.whatsapp-icon {
+  fill: #FFFFFF;
+  width: 30px;
+  height: 30px;
+}
+
+.whatsapp-tooltip {
+  background-color: var(--text-primary);
+  color: var(--bg-color);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-warm);
+  opacity: 0;
+  transform: translateX(10px);
+  pointer-events: none;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.whatsapp-fab-container:hover .whatsapp-tooltip {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@media (max-width: 768px) {
+  .whatsapp-fab-container {
+    bottom: 1.5rem;
+    right: 1.5rem;
+  }
+  .whatsapp-fab {
+    width: 50px;
+    height: 50px;
+  }
+  .whatsapp-icon {
+    width: 25px;
+    height: 25px;
+  }
+  .whatsapp-tooltip {
+    display: none; /* Hide tooltip on small mobile screens */
   }
 }
