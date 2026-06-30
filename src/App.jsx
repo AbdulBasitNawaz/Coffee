@@ -7,7 +7,9 @@ function App() {
   const [frames, setFrames] = useState([])
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [isLoaded, setIsLoaded] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => {
+    return typeof window !== 'undefined' ? window.innerWidth <= 1024 : false
+  })
   const canvasRef = useRef(null)
   
   // Bind scroll progress of the viewport
@@ -20,12 +22,11 @@ function App() {
     restDelta: 0.0005
   })
 
-  // Detect mobile viewport
+  // Detect mobile viewport resize
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 1024)
     }
-    handleResize()
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
@@ -34,7 +35,11 @@ function App() {
   useEffect(() => {
     let active = true
     let blobUrl = null
-    const videoUrl = '/Liquid_ripple_inside_coffee_cup_202606292353-ezgif.com-gif-maker.webm'
+    
+    // Desktop gets the full-fidelity 3.6MB video; Mobile gets the optimized 1.5MB video
+    const videoUrl = isMobile
+      ? '/Liquid_ripple_inside_coffee_cup_202606292353-ezgif.com-gif-maker (2).webm'
+      : '/Liquid_ripple_inside_coffee_cup_202606292353-ezgif.com-gif-maker.webm'
 
     const fetchAndExtract = async () => {
       try {
@@ -58,9 +63,9 @@ function App() {
           const duration = tempVideo.duration
           if (!duration || isNaN(duration)) return
 
-          // Extract frames at ~24fps for optimization and file duration
-          const fps = 24
-          const totalFrames = Math.max(30, Math.floor(duration * fps))
+          // Desktop gets 24fps for ultra-smoothness; Mobile gets 15fps for fast loading
+          const fps = isMobile ? 15 : 24
+          const totalFrames = Math.max(20, Math.floor(duration * fps))
           const extracted = []
 
           // Create internal canvas for extraction cropping
