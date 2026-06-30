@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion'
 import { Coffee, ChevronRight, Loader2 } from 'lucide-react'
+import lazyImg from './assets/CoffeeCup_for_lazy_loading.png'
 import './App.css'
 
 function App() {
@@ -220,10 +221,13 @@ function App() {
           <div className="video-bounding-box" id="video-container">
             {!isLoaded ? (
               <div className="loading-container">
-                <Loader2 className="animate-spin text-gold" size={32} />
-                <span className="loading-text">Brewing experience... {loadingProgress}%</span>
-                <div className="progress-bar-bg">
-                  <div className="progress-bar-fill" style={{ width: `${loadingProgress}%` }} />
+                <img src={lazyImg} className="loading-bg-image" alt="" />
+                <div className="loading-content">
+                  <Loader2 className="animate-spin text-gold" size={32} />
+                  <span className="loading-text">Brewing experience... {loadingProgress}%</span>
+                  <div className="progress-bar-bg">
+                    <div className="progress-bar-fill" style={{ width: `${loadingProgress}%` }} />
+                  </div>
                 </div>
               </div>
             ) : (
